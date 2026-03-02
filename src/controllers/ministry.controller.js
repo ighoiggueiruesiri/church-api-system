@@ -1,73 +1,149 @@
 const MinistryService = require('../services/ministry.service');
 const { createMinistryDTO, updateMinistryDTO } = require('../dtos/ministry.dto');
+const { success, error } = require('../utils/response');  //response helper
+const { logger } = require('../config/logger');          //log helper
 const mongoose = require('mongoose');
 
 //Get all minitries
-exports.getMinistries = async (req, res) => {
+exports.getMinistries = async (req, res, next) => {
+  const startTime = Date.now(); //time for the purpose of logging
+
   try {
-    const ministries = await MinistryService.getAll();
-    res.status(200).json(ministries);
+
+    //log
+    logger.info('Fetching ministries list', { 
+      page: req.query.page || 1, 
+      limit: req.query.limit || 10,
+      searchTerm: req.query.searchTerm || '',
+      ip: req.ip 
+    });
+
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100);
+    const searchTerm = req.query.search?.trim() || '';
+
+    const result = await MinistryService.getAll(page, limit, searchTerm);
+
+    //log
+    const duration = Date.now() - startTime;
+    logger.info('Ministries fetched successfully', { 
+      count: result.data.length, 
+      durationMs: duration,
+      page,
+      totalPages: result.pagination.pages
+    });
+
+    success(res, result);
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    //log
+    logger.error('Failed to fetch ministries', { error: err.message, stack: err.stack });
+
+    next(err);
   }
 };
 
 //Get a specific ministry
-exports.getMinistryById = async (req, res) => {
+exports.getMinistryById = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const ministry = await MinistryService.getById(id);
-    
+    //log
+    logger.info('Fetching single ministry', { id: req.params.id });
+
+    const ministry = await MinistryService.getById(req.params.id);
     if (!ministry) {
-      return res.status(404).json({ message: "Ministry not found" });
-    }
-    
-    res.status(200).json(ministry);
+
+      //log
+      logger.warn('Ministry not found', { id: req.params.id });
+      return error(res, "Ministry not found", 404)
+    };
+
+    //log
+    logger.info('Ministry retrieved successfully', { id: req.params.id, title: ministry.title });
+    success(res, ministry);
   } catch (err) {
-    res.status(500).json({ error: "Invalid ID format or Server Error" });
+
+    //log
+    logger.error('Error fetching ministry by ID', { id: req.params.id, error: err.message });
+    next(err);
   }
 };
 
 //create a ministry
-exports.createMinistry = async (req, res) => {
+exports.createMinistry = async (req, res, next) => {
   try {
-    const validatedData = createMinistryDTO.parse(req.body); // DTO validation
-    const ministry = await MinistryService.create(validatedData); // Service call
-    res.status(201).json(ministry);
+
+    //log
+    logger.info('Creating new ministry', { title: req.body.title });
+    const validatedData = createMinistryDTO.parse(req.body);
+    const ministry = await MinistryService.create(validatedData);
+
+    //log
+    logger.info('Ministry created successfully', { 
+      ministryId: ministry._id, 
+      title: ministry.title 
+    });
+
+    success(res, ministry, 201);
   } catch (err) {
-    res.status(400).json({ error: err.errors || err.message });
+
+    //log
+    logger.error('Failed to create ministry', { 
+      attemptedTitle: req.body.title, 
+      error: err.message 
+    });
+
+    next(err); // Zod or DB error will be caught by global handler
   }
 };
 
 // Update a ministry
-exports.updateMinistry = async (req, res) => {
+exports.updateMinistry = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    // Note: In a strict setup, you would pass req.body through a DTO here first
-    const updatedMinistry = await MinistryService.updateMinistry(id, req.body);
-    
-    if (!updatedMinistry) {
-      return res.status(404).json({ message: "Ministry not found" });
+    //log
+    logger.info('Updating ministry', { id: req.params.id });
+
+    const validatedData = updateMinistryDTO.parse(req.body);
+    const updated = await MinistryService.update(req.params.id, validatedData);
+
+    if (!updated) { 
+      //log
+      logger.warn('Ministry not found for update', { id: req.params.id });
+
+      return error(res, "Ministry not found", 404);
     }
-    
-    res.status(200).json(updatedMinistry);
+    //log
+    logger.info('Ministry updated successfully', { id: req.params.id, title: updated.title });
+
+    success(res, updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    //log
+    logger.error('Failed to update ministry', { id: req.params.id, error: err.message });
+    next(err);
   }
 };
 
 // Delete a ministry
-exports.deleteMinistry = async (req, res) => {
+exports.deleteMinistry = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const deletedMinistry = await MinistryService.deleteMinistry(id);
-    
-    if (!deletedMinistry) {
-      return res.status(404).json({ message: "Ministry not found" });
+    //log
+    logger.info('Soft-deleting ministry', { id: req.params.id });
+    const deleted = await MinistryService.softDelete(req.params.id);
+
+    if (!deleted){ 
+      //log
+      logger.warn('Ministry not found for delete', { id: req.params.id });
+      return error(res, "Ministry not found", 404);
     }
-    
-    res.status(200).json({ message: "Ministry deleted successfully" });
+
+    //log
+    logger.info('Ministry soft-deleted successfully', { id: req.params.id });
+    success(res, { message: "Ministry deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+
+    //log
+    logger.error('Failed to soft-delete ministry', { id: req.params.id, error: err.message });
+    next(err);
   }
 };

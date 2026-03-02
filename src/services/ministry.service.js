@@ -1,34 +1,154 @@
 const Ministry = require('../models/Ministry');
+const { logger } = require('../config/logger');
 
 class MinistryService {
 
   //Get all ministries
-  async getAll() {
-    return await Ministry.find();
+  async getAll(page = 1, limit = 10, searchTerm = '') {
+    const start = Date.now();
+    try {
+
+      //log
+      logger.info('Fetching ministries', { page, limit, searchTerm: searchTerm || '(none)' });
+
+      const query = { deletedAt: null };
+
+      if (searchTerm.trim()) {
+        const regex = new RegExp(searchTerm.trim(), 'i'); // case-insensitive
+        query.$or = [
+          { title: regex },
+          { desc: regex },
+          { headName: regex },
+          { fullDesc: regex }
+        ];
+      }
+
+      const skip = (page - 1) * limit;
+      const [data, total] = await Promise.all([
+        Ministry.find(query)
+          .skip(skip)
+          .limit(Math.min(limit, 100))
+          .lean(),
+        Ministry.countDocuments(query)
+      ]);
+
+      const duration = Date.now() - start;
+
+      //log
+      logger.debug('Ministries search completed', { 
+        durationMs: duration, 
+        resultsFound: data.length,
+        totalRecords: total 
+      });
+
+      return {
+        data,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (err) {
+
+      //log
+      logger.error('Database error in getAll with search', { 
+        error: err.message, 
+        searchTerm 
+      });
+      throw err;
+    }
   }
 
   //get a minitry
   async getById(id) {
-    return await Ministry.findById(id);
+    try {
+      //log
+      logger.debug('Starting get by id query', { _id: id });
+
+      const ministry = await Ministry.findOne({ _id: id, deletedAt: null }).lean();
+
+      logger.debug('Get by id query successfully', { _id: id });
+
+      return ministry;
+
+    } catch (err) {
+
+      //log
+      logger.error('Database error in get by ID', { _id: id, error: err.message });
+      throw err;
+    }
   }
-  
+
   //create a ministry
   async create(data) {
-    return await Ministry.create(data);
+    try {
+      //log
+      logger.debug('Inserting new ministry document', { title: data.title });
+      
+      const ministry = await Ministry.create(data);
+
+      logger.debug('Document inserted successfully', { _id: ministry._id });
+
+      return ministry;
+
+    } catch (err) {
+      //log
+      logger.error('Create failed in create service', { title: data.title, error: err.message });
+      throw err;
+    }
   }
 
   //update a ministry
-  async updateMinistry(id, data) {
-    return await Ministry.findByIdAndUpdate(id, data, { 
-        new: true, // Returns the updated document instead of the old one
-        runValidators: true // Ensures the update follows your Schema rules
-    });
+  async update(id, data) {
+    try {
+      //log
+      logger.debug('Updating ministry document', { _id: id });
+      
+      const ministry = await Ministry.findOneAndUpdate(
+        { _id: id, deletedAt: null },
+        data,
+        { new: true, runValidators: true }
+      ).lean();
+
+      logger.debug('Document updating successfully', { _id: id });
+
+      return ministry;
+
+    } catch (err) {
+
+      //log
+      logger.error('update failed in update service', { _id: id, error: err.message });
+      throw err;
+    }
   }
 
   //delete a ministry
-  async deleteMinistry(id) {
-    return await Ministry.findByIdAndDelete(id);
+  async softDelete(id) {
+    try {
+
+      //log
+      logger.debug('Soft deleting ministry document', { _id: id });
+
+      const ministry = await Ministry.findOneAndUpdate(
+        { _id: id, deletedAt: null },
+        { deletedAt: new Date() },
+        { new: true }
+      );
+
+      logger.debug('Document soft delete successfully', { _id: id });
+
+      return ministry;
+
+    } catch (err) {
+
+      //log
+      logger.error('delete failed in soft delete service', { _id: id, error: err.message });
+      throw err;
+    }
   }
+  
 }
 
 module.exports = new MinistryService();
