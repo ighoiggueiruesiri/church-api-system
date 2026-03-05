@@ -53,7 +53,7 @@ class MinistryService {
     } catch (err) {
 
       //log
-      logger.error('Database error in getAll with search', { 
+      logger.error('Database error in get all ministry with search', { 
         error: err.message, 
         searchTerm 
       });
@@ -65,18 +65,18 @@ class MinistryService {
   async getById(id) {
     try {
       //log
-      logger.debug('Starting get by id query', { _id: id });
+      logger.debug('Starting get ministry by id query', { _id: id });
 
       const ministry = await Ministry.findOne({ _id: id, deletedAt: null }).lean();
 
-      logger.debug('Get by id query successfully', { _id: id });
+      logger.debug('Get ministry by id query successfully', { _id: id });
 
       return ministry;
 
     } catch (err) {
 
       //log
-      logger.error('Database error in get by ID', { _id: id, error: err.message });
+      logger.error('Database error in get ministry by ID', { _id: id, error: err.message });
       throw err;
     }
   }
@@ -89,13 +89,13 @@ class MinistryService {
       
       const ministry = await Ministry.create(data);
 
-      logger.debug('Document inserted successfully', { _id: ministry._id });
+      logger.debug('Ministry document inserted successfully', { _id: ministry._id });
 
       return ministry;
 
     } catch (err) {
       //log
-      logger.error('Create failed in create service', { title: data.title, error: err.message });
+      logger.error('Create failed in ministry create service', { title: data.title, error: err.message });
       throw err;
     }
   }
@@ -112,14 +112,14 @@ class MinistryService {
         { new: true, runValidators: true }
       ).lean();
 
-      logger.debug('Document updating successfully', { _id: id });
+      logger.debug('ministry document updating successfully', { _id: id });
 
       return ministry;
 
     } catch (err) {
 
       //log
-      logger.error('update failed in update service', { _id: id, error: err.message });
+      logger.error('update failed in ministry update service', { _id: id, error: err.message });
       throw err;
     }
   }
@@ -137,14 +137,14 @@ class MinistryService {
         { new: true }
       );
 
-      logger.debug('Document soft delete successfully', { _id: id });
+      logger.debug('ministry document soft delete successfully', { _id: id });
 
       return ministry;
 
     } catch (err) {
 
       //log
-      logger.error('delete failed in soft delete service', { _id: id, error: err.message });
+      logger.error('delete failed in soft ministry delete service', { _id: id, error: err.message });
       throw err;
     }
   }

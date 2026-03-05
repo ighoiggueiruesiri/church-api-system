@@ -9,6 +9,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const connectDB = require('./src/config/db');
 const { logger, morganStream } = require('./src/config/logger');
 const ministryRoutes = require('./src/routes/ministry.routes');
+const sermonRoutes = require('./src/routes/sermon.routes');
 const errorHandler = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -35,13 +36,14 @@ connectDB();
 
 // Routes
 app.use('/api/v1/ministries', ministryRoutes);
+app.use('/api/v1/sermons', sermonRoutes);
 
 // Global error handler (must be last)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT} (Production mode)`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
 
 // Graceful shutdown
