@@ -11,6 +11,7 @@ const { logger, morganStream } = require('./src/config/logger');
 const ministryRoutes = require('./src/routes/ministry.routes');
 const sermonRoutes = require('./src/routes/sermon.routes');
 const errorHandler = require('./src/middleware/errorHandler');
+const swaggerDocs = require('./src/config/swagger');
 
 const app = express();
 
@@ -37,6 +38,9 @@ connectDB();
 // Routes
 app.use('/api/v1/ministries', ministryRoutes);
 app.use('/api/v1/sermons', sermonRoutes);
+
+// Initialize Swagger Docs (mounts at /api-docs)
+swaggerDocs(app);
 
 // Global error handler (must be last)
 app.use(errorHandler);
