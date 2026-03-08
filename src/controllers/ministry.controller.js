@@ -20,7 +20,7 @@ exports.getMinistries = async (req, res, next) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
-    const searchTerm = req.query.search?.trim() || '';
+    const searchTerm = req.query.searchTerm?.trim() || '';
 
     const result = await MinistryService.getAll(page, limit, searchTerm);
 
@@ -140,6 +140,7 @@ exports.deleteMinistry = async (req, res, next) => {
     //log
     logger.info('Ministry soft-deleted successfully', { id: req.params.id });
     success(res, { message: "Ministry deleted successfully" });
+    
   } catch (err) {
 
     //log

@@ -1,19 +1,3 @@
-/*
-const mongoose = require('mongoose');
-
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB Connected...');
-  } catch (err) {
-    console.error('Database connection failed:', err.message);
-    process.exit(1);
-  }
-};
-
-module.exports = connectDB;
-*/
-
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
@@ -39,9 +23,12 @@ const connectDB = async () => {
   }
 };
 
-mongoose.connection.on('disconnected', () => {
-  console.warn('⚠️ MongoDB disconnected. Attempting reconnect...');
-  connectDB();
-});
+// Only auto-reconnect in production (skip during tests)
+if (process.env.NODE_ENV !== 'test') {
+  mongoose.connection.on('disconnected', () => {
+    console.warn('⚠️ MongoDB disconnected. Attempting reconnect...');
+    connectDB();
+  });
+}
 
 module.exports = connectDB;

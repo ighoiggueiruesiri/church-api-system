@@ -1,4 +1,3 @@
-// src/config/swagger.js
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
@@ -68,6 +67,21 @@ const options = {
             date: { type: 'string' },
             thumbnail: { type: 'string' },
             videoId: { type: 'string' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          } 
+        },
+
+        Event: {
+          type: 'object',
+          required: ['title', 'location'],
+          properties: {
+            _id: { type: 'string', description: 'The auto-generated id of the sermon' },
+            title: { type: 'string', description: 'The title of the event (unique)' },
+            location: { type: 'string', description: 'The location of the event' },
+            date: { type: 'string' },
+            time: { type: 'string' },
+            image: { type: 'string' },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' }
           }

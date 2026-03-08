@@ -20,7 +20,7 @@ exports.getSermons = async (req, res, next) => {
 
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || 10, 100);
-    const searchTerm = req.query.search?.trim() || '';
+    const searchTerm = req.query.searchTerm?.trim() || '';
 
     const result = await SermonService.getAll(page, limit, searchTerm);
 

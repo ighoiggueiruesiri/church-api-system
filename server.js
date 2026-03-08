@@ -10,6 +10,7 @@ const connectDB = require('./src/config/db');
 const { logger, morganStream } = require('./src/config/logger');
 const ministryRoutes = require('./src/routes/ministry.routes');
 const sermonRoutes = require('./src/routes/sermon.routes');
+const eventRoutes = require('./src/routes/event.routes');
 const errorHandler = require('./src/middleware/errorHandler');
 const swaggerDocs = require('./src/config/swagger');
 
@@ -23,6 +24,7 @@ app.use(express.json({ limit: '10mb' }));
 //app.use(mongoSanitize());                       // Prevent NoSQL injection
 
 // Rate limiting (100 requests per 15 min per IP)
+// DISABLED during tests so concurrent tests pass
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -30,14 +32,22 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
-app.use('/api/', limiter);
+
+if (process.env.NODE_ENV !== 'test') {
+  app.use('/api/', limiter);
+}
 
 // Database
-connectDB();
+if (process.env.NODE_ENV !== 'test') {
+  connectDB();
+} else {
+  console.log('🧪 TEST MODE - Using in-memory MongoDB (real DB skipped)');
+}
 
 // Routes
 app.use('/api/v1/ministries', ministryRoutes);
 app.use('/api/v1/sermons', sermonRoutes);
+app.use('/api/v1/events', eventRoutes);
 
 // Initialize Swagger Docs (mounts at /api-docs)
 swaggerDocs(app);
@@ -49,6 +59,8 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
+
+module.exports = app;
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
