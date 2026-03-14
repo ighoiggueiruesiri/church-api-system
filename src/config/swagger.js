@@ -11,7 +11,7 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Church API Documentation',
+      title: 'DC Chevron Church API Documentation',
       version: '1.0.0',
       description: 'API endpoints for Ministries, Sermons, Events, Testimonies, Blogs and Projects',
     },
@@ -219,6 +219,57 @@ const options = {
             desc:  { type: 'string' },
             image: { type: 'string', format: 'binary', description: 'Project image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' },
             link:  { type: 'string', description: 'External link (e.g. WhatsApp, donation page)' }
+          }
+        },
+         // ── Prayer Request ────────────────────────────────────────────────────
+        // GET response
+        PrayerRequest: {
+          type: 'object',
+          required: ['name', 'email', 'request'],
+          properties: {
+            _id:       { type: 'string', description: 'Auto-generated MongoDB ID' },
+            name:      { type: 'string', description: 'Submitter name (max 200 chars)' },
+            email:     { type: 'string', format: 'email', description: 'Submitter email address' },
+            request:   { type: 'string', description: 'Prayer request text (max 3000 chars)' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+ 
+        // POST request body — plain JSON, no file upload
+        PrayerRequestInput: {
+          type: 'object',
+          required: ['name', 'email', 'request'],
+          properties: {
+            name:    { type: 'string', description: 'Submitter name' },
+            email:   { type: 'string', format: 'email', description: 'Submitter email address' },
+            request: { type: 'string', description: 'Prayer request text (max 3000 chars)' }
+          }
+        },
+ 
+        // ── Contact Message ───────────────────────────────────────────────────
+        // GET response
+        ContactMessage: {
+          type: 'object',
+          required: ['name', 'email', 'message'],
+          properties: {
+            _id:       { type: 'string', description: 'Auto-generated MongoDB ID' },
+            name:      { type: 'string', description: 'Sender name (max 200 chars)' },
+            email:     { type: 'string', format: 'email', description: 'Sender email address' },
+            message:   { type: 'string', description: 'Message body (max 3000 chars)' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+ 
+        // POST request body — plain JSON, no file upload
+        ContactMessageInput: {
+          type: 'object',
+          required: ['name', 'email', 'message'],
+          properties: {
+            name:    { type: 'string', description: 'Sender name' },
+            email:   { type: 'string', format: 'email', description: 'Sender email address' },
+            message: { type: 'string', description: 'Message body (max 3000 chars)' }
           }
         },
 

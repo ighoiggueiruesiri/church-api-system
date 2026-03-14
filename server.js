@@ -12,6 +12,11 @@ const { logger, morganStream } = require('./src/config/logger');
 const ministryRoutes = require('./src/routes/ministry.routes');
 const sermonRoutes = require('./src/routes/sermon.routes');
 const eventRoutes = require('./src/routes/event.routes');
+const projectRoutes = require('./src/routes/project.routes');
+const testimonyRoutes = require('./src/routes/testimony.routes');
+const blogRoutes = require('./src/routes/blog.routes');
+const prayerRequestRoutes = require('./src/routes/prayerRequest.routes');
+const contactMessageRoutes = require('./src/routes/contactMessage.routes');
 const errorHandler = require('./src/middleware/errorHandler');
 const swaggerDocs = require('./src/config/swagger');
 
@@ -59,6 +64,12 @@ if (process.env.NODE_ENV !== 'test') {
 app.use('/api/v1/ministries', ministryRoutes);
 app.use('/api/v1/sermons', sermonRoutes);
 app.use('/api/v1/events', eventRoutes);
+app.use('/api/v1/blogs', blogRoutes);
+app.use('/api/v1/testimonies', testimonyRoutes);
+app.use('/api/v1/projects', projectRoutes);
+app.use('/api/v1/prayer-requests', prayerRequestRoutes);
+app.use('/api/v1/contact-messages', contactMessageRoutes);
+
 
 // Initialize Swagger Docs (mounts at /api-docs)
 swaggerDocs(app);
