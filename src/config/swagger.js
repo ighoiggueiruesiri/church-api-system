@@ -13,7 +13,7 @@ const options = {
     info: {
       title: 'Church API Documentation',
       version: '1.0.0',
-      description: 'API endpoints for Ministries and Sermons',
+      description: 'API endpoints for Ministries, Sermons, Events, Testimonies, Blogs and Projects',
     },
     servers: [
       {
@@ -23,14 +23,15 @@ const options = {
     ],
     components: {
       schemas: {
-        // Nested schema used inside Ministry
+
+        // ── Shared nested schema ──────────────────────────────────────────────
         Action: {
           type: 'object',
           required: ['label', 'type'],
           properties: {
             label: { type: 'string', description: 'Button label' },
-            link: { type: 'string', description: 'Link or action URL' },
-            info: { type: 'string', description: 'Additional info' },
+            link:  { type: 'string', description: 'Link or action URL' },
+            info:  { type: 'string', description: 'Additional info' },
             type: {
               type: 'string',
               enum: ['primary', 'secondary', 'info'],
@@ -40,7 +41,6 @@ const options = {
         },
 
         // ── Ministry ─────────────────────────────────────────────────────────
-        // Used for GET responses: image fields are absolute URL strings
         Ministry: {
           type: 'object',
           required: ['title', 'desc'],
@@ -62,7 +62,6 @@ const options = {
           },
         },
 
-        // Used for POST/PUT request bodies: headImage is a file upload
         MinistryInput: {
           type: 'object',
           required: ['title', 'desc'],
@@ -77,12 +76,11 @@ const options = {
             bg:        { type: 'string' },
             border:    { type: 'string' },
             fullDesc:  { type: 'string' },
-            // NOTE: actions must be sent as a JSON string when using multipart/form-data
-            // e.g. actions: '[{"label":"Join","type":"primary"}]'
             actions:   { type: 'string', description: 'JSON-stringified array of Action objects (required when sending multipart/form-data)' },
           },
         },
 
+        // ── Sermon ───────────────────────────────────────────────────────────
         Sermon: {
           type: 'object',
           required: ['title', 'pastor'],
@@ -110,6 +108,7 @@ const options = {
           }
         },
 
+        // ── Event ────────────────────────────────────────────────────────────
         Event: {
           type: 'object',
           required: ['title', 'location'],
@@ -129,13 +128,100 @@ const options = {
           type: 'object',
           required: ['title', 'location'],
           properties: {
-            title:     { type: 'string' },
-            location:  { type: 'string' },
-            image:     { type: 'string', format: 'binary', description: 'Event image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' },
-            date:      { type: 'string' },
-            time:      { type: 'string' }
+            title:    { type: 'string' },
+            location: { type: 'string' },
+            image:    { type: 'string', format: 'binary', description: 'Event image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' },
+            date:     { type: 'string' },
+            time:     { type: 'string' }
           }
         },
+
+        // ── Testimony ────────────────────────────────────────────────────────
+        // GET response — avatar is a resolved URL string
+        Testimony: {
+          type: 'object',
+          required: ['name', 'text'],
+          properties: {
+            _id:       { type: 'string', description: 'Auto-generated MongoDB ID' },
+            name:      { type: 'string', description: 'Testifier name (e.g. "Sarah O.")' },
+            role:      { type: 'string', description: 'Role or membership info (e.g. "Member since 2020")' },
+            text:      { type: 'string', description: 'The testimony text (max 2000 chars)' },
+            avatar:    { type: 'string', description: 'Initials string OR absolute URL of avatar image' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+
+        // POST/PUT request body — avatar can be an uploaded file OR a plain string (initials)
+        TestimonyInput: {
+          type: 'object',
+          required: ['name', 'text'],
+          properties: {
+            name:   { type: 'string' },
+            role:   { type: 'string' },
+            text:   { type: 'string' },
+            avatar: {
+              type: 'string',
+              format: 'binary',
+              description: 'Optional avatar image (JPEG/PNG/WebP, max 10MB). If omitted, supply initials as a plain string field instead.'
+            }
+          }
+        },
+
+        // ── Blog ─────────────────────────────────────────────────────────────
+        Blog: {
+          type: 'object',
+          required: ['title'],
+          properties: {
+            _id:         { type: 'string', description: 'Auto-generated MongoDB ID' },
+            title:       { type: 'string', description: 'Blog post title (unique)' },
+            date:        { type: 'string', description: 'Display date (e.g. "Feb 18, 2026")' },
+            excerpt:     { type: 'string', description: 'Short preview text (max 500 chars)' },
+            image:       { type: 'string', description: 'Absolute URL of the cover image' },
+            fullContent: { type: 'string', description: 'Full blog post body' },
+            createdAt:   { type: 'string', format: 'date-time' },
+            updatedAt:   { type: 'string', format: 'date-time' }
+          }
+        },
+
+        BlogInput: {
+          type: 'object',
+          required: ['title'],
+          properties: {
+            title:       { type: 'string' },
+            date:        { type: 'string' },
+            excerpt:     { type: 'string' },
+            image:       { type: 'string', format: 'binary', description: 'Cover image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' },
+            fullContent: { type: 'string' }
+          }
+        },
+
+        // ── Project ──────────────────────────────────────────────────────────
+        Project: {
+          type: 'object',
+          required: ['title', 'desc'],
+          properties: {
+            _id:       { type: 'string', description: 'Auto-generated MongoDB ID' },
+            title:     { type: 'string', description: 'Project title (unique)' },
+            desc:      { type: 'string', description: 'Project description (max 2000 chars)' },
+            image:     { type: 'string', description: 'Absolute URL of the project image' },
+            link:      { type: 'string', description: 'External link (e.g. WhatsApp support link)' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+
+        ProjectInput: {
+          type: 'object',
+          required: ['title', 'desc'],
+          properties: {
+            title: { type: 'string' },
+            desc:  { type: 'string' },
+            image: { type: 'string', format: 'binary', description: 'Project image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' },
+            link:  { type: 'string', description: 'External link (e.g. WhatsApp, donation page)' }
+          }
+        },
+
       }
     }
   },
