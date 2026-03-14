@@ -1,5 +1,6 @@
 const Ministry = require('../models/Ministry');
 const { logger } = require('../config/logger');
+const { deleteUploadedFile } = require('../utils/fileHelper');
 
 class MinistryService {
 
@@ -106,6 +107,14 @@ class MinistryService {
       //log
       logger.debug('Updating ministry document', { _id: id });
       
+      // Fetch the existing document first so we can purge the old image if
+      // the caller is replacing headImage with a new upload.
+      const existing = await Ministry.findOne({ _id: id, deletedAt: null }).lean();
+
+      if (existing && data.headImage && existing.headImage !== data.headImage) {
+        deleteUploadedFile(existing.headImage);
+      }
+
       const ministry = await Ministry.findOneAndUpdate(
         { _id: id, deletedAt: null },
         data,
@@ -131,11 +140,18 @@ class MinistryService {
       //log
       logger.debug('Soft deleting ministry document', { _id: id });
 
+      // Fetch first so we can purge the image after the soft-delete succeeds
+      const existing = await Ministry.findOne({ _id: id, deletedAt: null }).lean();
+
       const ministry = await Ministry.findOneAndUpdate(
         { _id: id, deletedAt: null },
         { deletedAt: new Date() },
         { new: true }
       );
+
+      if (ministry && existing?.headImage) {
+        deleteUploadedFile(existing.headImage);
+      }
 
       logger.debug('ministry document soft delete successfully', { _id: id });
 

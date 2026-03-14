@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/event.controller');
 const validateObjectId = require('../middleware/validateObjectId');
+const {createUploadMiddleware} = require('../middleware/upload');
+const compressImage = require('../middleware/compressImage');
+
+const eventUpload = createUploadMiddleware([{ name: 'image', maxCount: 1 }]);
 
 /**
  * @swagger
@@ -91,15 +95,16 @@ router.get('/:id', validateObjectId, controller.getEventById);
  *   post:
  *     summary: Create a new Event
  *     tags: [Events]
+ *     consumes: multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Event'
+ *             $ref: '#/components/schemas/EventInput'
  *     responses:
  *       201:
- *         description: The Event was successfully created
+ *         description: Event created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -109,40 +114,45 @@ router.get('/:id', validateObjectId, controller.getEventById);
  *       500:
  *         description: Server Error
  */
-router.post('/', controller.createEvent);
+router.post('/', eventUpload, compressImage, controller.createEvent);
 
 /**
  * @swagger
  * /api/v1/Events/{id}:
  *   put:
- *     summary: Update a Event by ID
+ *     summary: Update Event
  *     tags: [Events]
+ *     consumes: multipart/form-data
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
- *         description: The Event ID
  *     requestBody:
- *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Event'
+ *             type: object
+ *             properties:
+ *               title:    { type: string }
+ *               location: { type: string }
+ *               image:    { type: string, format: binary, description: 'Event image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' }
+ *               date:     { type: string }
+ *               time:     { type: string }
  *     responses:
  *       200:
- *         description: The Event was successfully updated
+ *         description: Event updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Event'
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Event not found
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, controller.updateEvent);
+router.put('/:id', validateObjectId, eventUpload, compressImage, controller.updateEvent);
 
 /**
  * @swagger

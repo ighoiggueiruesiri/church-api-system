@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
+const path = require('path');
 
 const connectDB = require('./src/config/db');
 const { logger, morganStream } = require('./src/config/logger');
@@ -16,10 +17,20 @@ const swaggerDocs = require('./src/config/swagger');
 
 const app = express();
 
+// ─── Static file serving ──────────────────────────────────────────────────────
+// Serves /public on every environment (local, cPanel, AWS, etc.).
+// Images are accessed at  <APP_URL>/uploads/<filename>  — fully dynamic.
+// The path.join is relative to this file so it resolves correctly regardless
+// of the working directory the process is started from.
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Security & Logging Middleware
 app.use(helmet());
 app.use(morgan('combined', { stream: morganStream }));      // Production logging
-app.use(cors({ origin: process.env.ALLOWED_ORIGINS?.split(',') || '*' }));
+
+const rawOrigins = process.env.ALLOWED_ORIGINS?.trim();
+app.use(cors({ origin: !rawOrigins || rawOrigins === '*' ? '*' : rawOrigins.split(',').map(o => o.trim()) }));
+
 app.use(express.json({ limit: '10mb' }));
 //app.use(mongoSanitize());                       // Prevent NoSQL injection
 
@@ -58,6 +69,12 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
+
+  logger.info(`✅ Server running`, {
+    port: PORT,
+    env: process.env.NODE_ENV || 'development',
+    url: process.env.APP_URL || `http://localhost:${PORT}`,
+  });
 });
 
 module.exports = app;
@@ -65,5 +82,7 @@ module.exports = app;
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('🛑 SIGTERM received. Shutting down gracefully...');
+  logger.info('🛑 SIGTERM received — shutting down gracefully');
+
   server.close(() => process.exit(0));
 });

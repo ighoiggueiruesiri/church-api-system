@@ -2,6 +2,10 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/sermon.controller');
 const validateObjectId = require('../middleware/validateObjectId');
+const {createUploadMiddleware} = require('../middleware/upload');
+const compressImage = require('../middleware/compressImage');          
+
+const sermonUpload = createUploadMiddleware([{ name: 'thumbnail', maxCount: 1 }]);
 
 /**
  * @swagger
@@ -91,15 +95,16 @@ router.get('/:id', validateObjectId, controller.getSermonById);
  *   post:
  *     summary: Create a new sermon
  *     tags: [Sermons]
+ *     consumes: multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Sermon'
+ *             $ref: '#/components/schemas/SermonInput'
  *     responses:
  *       201:
- *         description: The sermon was successfully created
+ *         description: Sermon created successfully
  *         content:
  *           application/json:
  *             schema:
@@ -109,40 +114,45 @@ router.get('/:id', validateObjectId, controller.getSermonById);
  *       500:
  *         description: Server Error
  */
-router.post('/', controller.createSermon);
+router.post('/', sermonUpload, compressImage, controller.createSermon);
 
 /**
  * @swagger
  * /api/v1/sermons/{id}:
  *   put:
- *     summary: Update a sermon by ID
+ *     summary: Update sermon
  *     tags: [Sermons]
+ *     consumes: multipart/form-data
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
- *         description: The sermon ID
  *     requestBody:
- *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Sermon'
+ *             type: object
+ *             properties:
+ *               title:     { type: string }
+ *               pastor:    { type: string }
+ *               date:      { type: string }
+ *               thumbnail: { type: string, format: binary, description: 'Thumbnail image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' }
+ *               videoId:   { type: string }
  *     responses:
  *       200:
- *         description: The sermon was successfully updated
+ *         description: Sermon updated successfully
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Sermon'
+ *       400:
+ *         description: Validation error
  *       404:
  *         description: Sermon not found
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, controller.updateSermon);
+router.put('/:id', validateObjectId, sermonUpload, compressImage, controller.updateSermon);
 
 /**
  * @swagger

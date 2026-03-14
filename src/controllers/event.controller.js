@@ -2,6 +2,9 @@ const EventService = require('../services/Event.service');
 const { createEventDTO, updateEventDTO } = require('../dtos/Event.dto');
 const { success, error } = require('../utils/response');  //response helper
 const { logger } = require('../config/logger');          //log helper
+const { resolveImageUrls } = require('../utils/imageUrl');
+const { stripEmptyStrings } = require('../utils/stripEmptyStrings');
+const { injectUploadedFilePaths } = require('../utils/injectUploadedFilePaths');
 const mongoose = require('mongoose');
 
 //Get all Events
@@ -23,7 +26,8 @@ exports.getEvents = async (req, res, next) => {
     const searchTerm = req.query.searchTerm?.trim() || '';
 
     const result = await EventService.getAll(page, limit, searchTerm);
-
+    result.data = resolveImageUrls(result.data);
+    
     //log
     const duration = Date.now() - startTime;
     logger.info('Events fetched successfully', { 
@@ -61,7 +65,7 @@ exports.getEventById = async (req, res, next) => {
     //log
     logger.info('Event retrieved successfully', { id: req.params.id, title: Event.title });
 
-    success(res, Event);
+    success(res, resolveImageUrls(Event));
 
   } catch (err) {
 
@@ -77,7 +81,9 @@ exports.createEvent = async (req, res, next) => {
 
     //log
     logger.info('Creating new Event', { title: req.body.title });
-    const validatedData = createEventDTO.parse(req.body);
+
+    injectUploadedFilePaths(req);
+    const validatedData = createEventDTO.parse(stripEmptyStrings(req.body));
     const Event = await EventService.create(validatedData);
 
     //log
@@ -86,7 +92,7 @@ exports.createEvent = async (req, res, next) => {
       title: Event.title 
     });
 
-    success(res, Event, 201);
+    success(res, resolveImageUrls(Event), 201);
   } catch (err) {
 
     //log
@@ -105,7 +111,8 @@ exports.updateEvent = async (req, res, next) => {
     //log
     logger.info('Updating Event', { id: req.params.id });
 
-    const validatedData = updateEventDTO.parse(req.body);
+    injectUploadedFilePaths(req);
+    const validatedData = updateEventDTO.parse(stripEmptyStrings(req.body));
     const updated = await EventService.update(req.params.id, validatedData);
 
     if (!updated) { 
@@ -117,7 +124,7 @@ exports.updateEvent = async (req, res, next) => {
     //log
     logger.info('Event updated successfully', { id: req.params.id, title: updated.title });
 
-    success(res, updated);
+    success(res, resolveImageUrls(updated));
   } catch (err) {
 
     //log

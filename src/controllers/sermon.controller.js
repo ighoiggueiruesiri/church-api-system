@@ -2,6 +2,9 @@ const SermonService = require('../services/sermon.service');
 const { createSermonDTO, updateSermonDTO } = require('../dtos/sermon.dto');
 const { success, error } = require('../utils/response');  //response helper
 const { logger } = require('../config/logger');          //log helper
+const { resolveImageUrls } = require('../utils/imageUrl');
+const { stripEmptyStrings } = require('../utils/stripEmptyStrings');
+const { injectUploadedFilePaths } = require('../utils/injectUploadedFilePaths');
 const mongoose = require('mongoose');
 
 //Get all sermons
@@ -23,6 +26,7 @@ exports.getSermons = async (req, res, next) => {
     const searchTerm = req.query.searchTerm?.trim() || '';
 
     const result = await SermonService.getAll(page, limit, searchTerm);
+    result.data = resolveImageUrls(result.data);
 
     //log
     const duration = Date.now() - startTime;
@@ -61,7 +65,7 @@ exports.getSermonById = async (req, res, next) => {
     //log
     logger.info('Sermon retrieved successfully', { id: req.params.id, title: sermon.title });
 
-    success(res, sermon);
+    success(res, resolveImageUrls(sermon));
 
   } catch (err) {
 
@@ -74,54 +78,37 @@ exports.getSermonById = async (req, res, next) => {
 //create a sermon
 exports.createSermon = async (req, res, next) => {
   try {
-
-    //log
     logger.info('Creating new sermon', { title: req.body.title });
-    const validatedData = createSermonDTO.parse(req.body);
+
+    injectUploadedFilePaths(req);
+    const validatedData = createSermonDTO.parse(stripEmptyStrings(req.body));
+
     const sermon = await SermonService.create(validatedData);
 
-    //log
-    logger.info('Sermon created successfully', { 
-      sermonId: sermon._id, 
-      title: sermon.title 
-    });
-
-    success(res, sermon, 201);
+    logger.info('Sermon created successfully', { sermonId: sermon._id });
+    success(res, resolveImageUrls(sermon), 201);
   } catch (err) {
-
-    //log
-    logger.error('Failed to create sermon', { 
-      attemptedTitle: req.body.title, 
-      error: err.message 
-    });
-
-    next(err); // Zod or DB error will be caught by global handler
+    logger.error('Failed to create sermon', { error: err.message });
+    next(err);
   }
 };
 
 // Update a sermon
 exports.updateSermon = async (req, res, next) => {
   try {
-    //log
     logger.info('Updating sermon', { id: req.params.id });
 
-    const validatedData = updateSermonDTO.parse(req.body);
+    injectUploadedFilePaths(req);
+    const validatedData = updateSermonDTO.parse(stripEmptyStrings(req.body));
+
     const updated = await SermonService.update(req.params.id, validatedData);
 
-    if (!updated) { 
-      //log
-      logger.warn('Sermon not found for update', { id: req.params.id });
+    if (!updated) return error(res, "Sermon not found", 404);
 
-      return error(res, "Sermon not found", 404);
-    }
-    //log
-    logger.info('Sermon updated successfully', { id: req.params.id, title: updated.title });
-
-    success(res, updated);
+    logger.info('Sermon updated successfully', { id: req.params.id });
+    success(res, resolveImageUrls(updated));
   } catch (err) {
-
-    //log
-    logger.error('Failed to update sermon', { id: req.params.id, error: err.message });
+    logger.error('Failed to update sermon', { error: err.message });
     next(err);
   }
 };

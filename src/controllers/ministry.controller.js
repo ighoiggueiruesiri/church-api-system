@@ -2,6 +2,9 @@ const MinistryService = require('../services/ministry.service');
 const { createMinistryDTO, updateMinistryDTO } = require('../dtos/ministry.dto');
 const { success, error } = require('../utils/response');  //response helper
 const { logger } = require('../config/logger');          //log helper
+const { resolveImageUrls } = require('../utils/imageUrl');
+const { stripEmptyStrings } = require('../utils/stripEmptyStrings');
+const { injectUploadedFilePaths } = require('../utils/injectUploadedFilePaths');
 const mongoose = require('mongoose');
 
 //Get all minitries
@@ -33,6 +36,9 @@ exports.getMinistries = async (req, res, next) => {
       totalPages: result.pagination.pages
     });
 
+    // Rewrite all stored relative image paths → full absolute URLs
+    result.data = resolveImageUrls(result.data);
+
     success(res, result);
 
   } catch (err) {
@@ -51,6 +57,7 @@ exports.getMinistryById = async (req, res, next) => {
     logger.info('Fetching single ministry', { id: req.params.id });
 
     const ministry = await MinistryService.getById(req.params.id);
+
     if (!ministry) {
 
       //log
@@ -60,7 +67,9 @@ exports.getMinistryById = async (req, res, next) => {
 
     //log
     logger.info('Ministry retrieved successfully', { id: req.params.id, title: ministry.title });
-    success(res, ministry);
+
+    success(res, resolveImageUrls(ministry));
+
   } catch (err) {
 
     //log
@@ -75,7 +84,11 @@ exports.createMinistry = async (req, res, next) => {
 
     //log
     logger.info('Creating new ministry', { title: req.body.title });
-    const validatedData = createMinistryDTO.parse(req.body);
+
+    // Move uploaded file paths (e.g. headImage) into req.body before DTO parse
+    injectUploadedFilePaths(req);
+
+    const validatedData = createMinistryDTO.parse(stripEmptyStrings(req.body));
     const ministry = await MinistryService.create(validatedData);
 
     //log
@@ -84,7 +97,8 @@ exports.createMinistry = async (req, res, next) => {
       title: ministry.title 
     });
 
-    success(res, ministry, 201);
+    success(res, resolveImageUrls(ministry.toObject ? ministry.toObject() : ministry), 201);
+
   } catch (err) {
 
     //log
@@ -103,7 +117,10 @@ exports.updateMinistry = async (req, res, next) => {
     //log
     logger.info('Updating ministry', { id: req.params.id });
 
-    const validatedData = updateMinistryDTO.parse(req.body);
+    // Move uploaded file paths into req.body before DTO parse
+    injectUploadedFilePaths(req);
+
+    const validatedData = updateMinistryDTO.parse(stripEmptyStrings(req.body));
     const updated = await MinistryService.update(req.params.id, validatedData);
 
     if (!updated) { 
@@ -115,7 +132,7 @@ exports.updateMinistry = async (req, res, next) => {
     //log
     logger.info('Ministry updated successfully', { id: req.params.id, title: updated.title });
 
-    success(res, updated);
+    success(res, resolveImageUrls(updated));
   } catch (err) {
 
     //log

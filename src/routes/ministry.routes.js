@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/ministry.controller');
 const validateObjectId = require('../middleware/validateObjectId');
+const {createUploadMiddleware} = require('../middleware/upload');
+const compressImage = require('../middleware/compressImage');
+
+const ministryUpload = createUploadMiddleware([
+  { name: 'headImage', maxCount: 1 },
+]);
+
 
 /**
  * @swagger
@@ -91,25 +98,30 @@ router.get('/:id', validateObjectId, controller.getMinistryById);
  *   post:
  *     summary: Create a new ministry
  *     tags: [Ministries]
+ *     consumes: multipart/form-data
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Ministry'
+ *             type: object
+ *             required: [title, desc]
+ *             properties:
+ *               title: { type: string }
+ *               desc: { type: string }
+ *               headName: { type: string }
+ *               headImage: { type: string, format: binary }
+ *               headTitle: { type: string }
+ *               icon: { type: string }
+ *               color: { type: string }
+ *               bg: { type: string }
+ *               border: { type: string }
+ *               fullDesc: { type: string }
+ *               actions: { type: string, description: 'JSON-stringified array of actions' }
  *     responses:
- *       201:
- *         description: The ministry was successfully created
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Ministry'
- *       400:
- *         description: Validation error
- *       500:
- *         description: Server Error
+ *       201: { description: Ministry created }
  */
-router.post('/', controller.createMinistry);
+router.post('/', ministryUpload, compressImage, controller.createMinistry);
 
 /**
  * @swagger
@@ -117,32 +129,32 @@ router.post('/', controller.createMinistry);
  *   put:
  *     summary: Update a ministry by ID
  *     tags: [Ministries]
+ *     consumes: multipart/form-data
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
- *         schema:
- *           type: string
- *         description: The ministry ID
  *     requestBody:
- *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
- *             $ref: '#/components/schemas/Ministry'
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               desc: { type: string }
+ *               headName: { type: string }
+ *               headImage: { type: string, format: binary }
+ *               headTitle: { type: string }
+ *               icon: { type: string }
+ *               color: { type: string }
+ *               bg: { type: string }
+ *               border: { type: string }
+ *               fullDesc: { type: string }
+ *               actions: { type: string }
  *     responses:
- *       200:
- *         description: The ministry was successfully updated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Ministry'
- *       404:
- *         description: Ministry not found
- *       500:
- *         description: Server Error
+ *       200: { description: Ministry updated }
  */
-router.put('/:id', validateObjectId, controller.updateMinistry);
+router.put('/:id', validateObjectId, ministryUpload, compressImage, controller.updateMinistry);
 
 /**
  * @swagger
