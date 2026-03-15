@@ -22,12 +22,26 @@ const swaggerDocs = require('./src/config/swagger');
 
 const app = express();
 
+app.get('/', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: "Backend is working well",
+    timestamp: new Date().toISOString() 
+  });
+});
+
+// Add this right after you initialize: const app = express();
+const APP_URL = process.env.APP_URL || '';
+
 // ─── Static file serving ──────────────────────────────────────────────────────
 // Serves /public on every environment (local, cPanel, AWS, etc.).
 // Images are accessed at  <APP_URL>/uploads/<filename>  — fully dynamic.
 // The path.join is relative to this file so it resolves correctly regardless
 // of the working directory the process is started from.
+
 app.use(express.static(path.join(__dirname, 'public')));
+
+//app.use(`${APP_URL}/`, express.static(path.join(__dirname, 'public')));
 
 // Security & Logging Middleware
 app.use(helmet());
@@ -71,6 +85,17 @@ app.use('/api/v1/prayer-requests', prayerRequestRoutes);
 app.use('/api/v1/contact-messages', contactMessageRoutes);
 
 
+/*
+app.use(`${APP_URL}/api/v1/ministries`, ministryRoutes);
+app.use(`${APP_URL}/api/v1/sermons`, sermonRoutes);
+app.use(`${APP_URL}/api/v1/events`, eventRoutes);
+app.use(`${APP_URL}/api/v1/blogs`, blogRoutes);
+app.use(`${APP_URL}/api/v1/testimonies`, testimonyRoutes);
+app.use(`${APP_URL}/api/v1/projects`, projectRoutes);
+app.use(`${APP_URL}/api/v1/prayer-requests`, prayerRequestRoutes);
+app.use(`${APP_URL}/api/v1/contact-messages`, contactMessageRoutes);
+*/
+
 // Initialize Swagger Docs (mounts at /api-docs)
 swaggerDocs(app);
 
@@ -78,7 +103,7 @@ swaggerDocs(app);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
 
   logger.info(`✅ Server running`, {

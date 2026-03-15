@@ -1,5 +1,5 @@
-const EventService = require('../services/Event.service');
-const { createEventDTO, updateEventDTO } = require('../dtos/Event.dto');
+const EventService = require('../services/event.service');
+const { createEventDTO, updateEventDTO } = require('../dtos/event.dto');
 const { success, error } = require('../utils/response');  //response helper
 const { logger } = require('../config/logger');          //log helper
 const { resolveImageUrls } = require('../utils/imageUrl');

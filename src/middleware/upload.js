@@ -1,20 +1,10 @@
 const multer = require('multer');
-const sharp = require('sharp');
-const path = require('path');
-const fs = require('fs');
+const sharp = require('sharp');                    // ← still used (pre-compress)
+const cloudinary = require('../config/cloudinary'); // ← NEW
 const { v4: uuidv4 } = require('uuid');
 const { logger } = require('../config/logger');
 
-// Resolve upload directory relative to project root — works on cPanel, AWS, anywhere
-const UPLOAD_DIR = path.join(__dirname, '../../public/uploads');
-
-// Ensure the directory exists at startup
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-  logger.info('Created upload directory', { path: UPLOAD_DIR });
-}
-
-// ─── Multer: memory storage so sharp can process before writing to disk ───────
+// ─── Multer: memory storage (unchanged) ─────────────────────────────────────
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
@@ -29,17 +19,15 @@ const fileFilter = (req, file, cb) => {
 const multerUpload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB cap
+  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB cap
 });
 
-// ─── Sharp: compress + convert to WebP, then write to disk ───────────────────
-const compressAndSave = async (req, res, next) => {
-  // Nothing to process
+// ─── NEW: Sharp compress → Cloudinary upload (replaces old compressAndSave) ──
+const compressAndUploadToCloudinary = async (req, res, next) => {
   if (!req.file && (!req.files || Object.keys(req.files).length === 0)) {
     return next();
   }
 
-  // Flatten both single-file (req.file) and multi-field (req.files) shapes
   const entries = req.file
     ? [{ key: req.file.fieldname, file: req.file }]
     : Object.entries(req.files).flatMap(([key, arr]) =>
@@ -48,46 +36,47 @@ const compressAndSave = async (req, res, next) => {
 
   try {
     for (const { file } of entries) {
-      const filename = `${uuidv4()}.webp`;
-      const outputPath = path.join(UPLOAD_DIR, filename);
-
-      await sharp(file.buffer)
-        .resize({ width: 1200, withoutEnlargement: true }) // Never upscale
+      const compressedBuffer = await sharp(file.buffer)
+        .resize({ width: 1200, withoutEnlargement: true })
         .webp({ quality: 80 })
-        .toFile(outputPath);
+        .toBuffer();
 
-      // Attach the stored relative path back onto the file object
-      file.filename = filename;
-      file.storedPath = `/uploads/${filename}`; // Relative — domain-agnostic
+      // ✅ Convert Buffer → base64 data URI before uploading
+      const base64Uri = `data:image/webp;base64,${compressedBuffer.toString('base64')}`;
+      const publicId = uuidv4();
 
-      logger.debug('Image compressed and saved', { filename, originalSize: file.size });
+      const result = await cloudinary.uploader.upload(base64Uri, {
+        public_id: publicId,
+        folder: 'dcchevron',
+        resource_type: 'image'
+      });
+
+      file.filename = `${publicId}.webp`;
+      file.storedPath = result.secure_url;
+      file.publicId = result.public_id;
+
+      logger.debug('Image uploaded to Cloudinary', {
+        publicId: result.public_id,
+        url: result.secure_url,
+        originalSize: file.size
+      });
     }
 
     next();
   } catch (err) {
-    logger.error('Image compression failed', { error: err.message });
+    logger.error('Image upload to Cloudinary failed', { error: err.message });
     next(err);
   }
 };
 
 /**
- * createUploadMiddleware(fields)
- *
- * Generic factory — not tied to any single route or model.
- *
- * @param {Array<{ name: string, maxCount?: number }>} fields
- *   e.g. [{ name: 'headImage', maxCount: 1 }, { name: 'banner', maxCount: 1 }]
- * @returns Express middleware array [multerFields, compressAndSave]
- *
- * Usage in any route file:
- *   const { createUploadMiddleware } = require('../middleware/upload.middleware');
- *   router.post('/', createUploadMiddleware([{ name: 'thumbnail' }]), controller.create);
+ * createUploadMiddleware (exactly the same API as before!)
  */
 const createUploadMiddleware = (fields = []) => {
   if (!Array.isArray(fields) || fields.length === 0) {
     throw new Error('createUploadMiddleware requires a non-empty fields array');
   }
-  return [multerUpload.fields(fields), compressAndSave];
+  return [multerUpload.fields(fields), compressAndUploadToCloudinary];
 };
 
 module.exports = { createUploadMiddleware };

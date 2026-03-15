@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/ministry.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const {createUploadMiddleware} = require('../middleware/upload');
-const compressImage = require('../middleware/compressImage');
+//const compressImage = require('../middleware/compressImage');
 
 const ministryUpload = createUploadMiddleware([
   { name: 'headImage', maxCount: 1 },
@@ -121,7 +121,7 @@ router.get('/:id', validateObjectId, controller.getMinistryById);
  *     responses:
  *       201: { description: Ministry created }
  */
-router.post('/', ministryUpload, compressImage, controller.createMinistry);
+router.post('/', ministryUpload, controller.createMinistry);
 
 /**
  * @swagger
@@ -154,7 +154,7 @@ router.post('/', ministryUpload, compressImage, controller.createMinistry);
  *     responses:
  *       200: { description: Ministry updated }
  */
-router.put('/:id', validateObjectId, ministryUpload, compressImage, controller.updateMinistry);
+router.put('/:id', validateObjectId, ministryUpload, controller.updateMinistry);
 
 /**
  * @swagger

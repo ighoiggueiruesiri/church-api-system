@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/sermon.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const {createUploadMiddleware} = require('../middleware/upload');
-const compressImage = require('../middleware/compressImage');          
+//const compressImage = require('../middleware/compressImage');          
 
 const sermonUpload = createUploadMiddleware([{ name: 'thumbnail', maxCount: 1 }]);
 
@@ -114,7 +114,7 @@ router.get('/:id', validateObjectId, controller.getSermonById);
  *       500:
  *         description: Server Error
  */
-router.post('/', sermonUpload, compressImage, controller.createSermon);
+router.post('/', sermonUpload, controller.createSermon);
 
 /**
  * @swagger
@@ -152,7 +152,7 @@ router.post('/', sermonUpload, compressImage, controller.createSermon);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, sermonUpload, compressImage, controller.updateSermon);
+router.put('/:id', validateObjectId, sermonUpload, controller.updateSermon);
 
 /**
  * @swagger

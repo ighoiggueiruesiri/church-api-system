@@ -1,4 +1,4 @@
-const Ministry = require('../models/Ministry');
+const Ministry = require('../models/ministry');
 const { logger } = require('../config/logger');
 const { deleteUploadedFile } = require('../utils/fileHelper');
 

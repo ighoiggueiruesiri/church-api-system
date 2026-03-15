@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/blog.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const { createUploadMiddleware } = require('../middleware/upload');
-const compressImage = require('../middleware/compressImage');
+//const compressImage = require('../middleware/compressImage');
 
 const blogUpload = createUploadMiddleware([{ name: 'image', maxCount: 1 }]);
 
@@ -114,7 +114,7 @@ router.get('/:id', validateObjectId, controller.getBlogById);
  *       500:
  *         description: Server Error
  */
-router.post('/', blogUpload, compressImage, controller.createBlog);
+router.post('/', blogUpload, controller.createBlog);
 
 /**
  * @swagger
@@ -152,7 +152,7 @@ router.post('/', blogUpload, compressImage, controller.createBlog);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, blogUpload, compressImage, controller.updateBlog);
+router.put('/:id', validateObjectId, blogUpload, controller.updateBlog);
 
 /**
  * @swagger

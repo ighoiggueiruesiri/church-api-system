@@ -3,9 +3,8 @@ const router = express.Router();
 const controller = require('../controllers/testimony.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const { createUploadMiddleware } = require('../middleware/upload');
-const compressImage = require('../middleware/compressImage');
+//const compressImage = require('../middleware/compressImage');
 
-// avatar is optional — the field may carry an uploaded profile image
 const testimonyUpload = createUploadMiddleware([{ name: 'avatar', maxCount: 1 }]);
 
 /**
@@ -115,7 +114,7 @@ router.get('/:id', validateObjectId, controller.getTestimonyById);
  *       500:
  *         description: Server Error
  */
-router.post('/', testimonyUpload, compressImage, controller.createTestimony);
+router.post('/', testimonyUpload, controller.createTestimony);
 
 /**
  * @swagger
@@ -152,7 +151,7 @@ router.post('/', testimonyUpload, compressImage, controller.createTestimony);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, testimonyUpload, compressImage, controller.updateTestimony);
+router.put('/:id', validateObjectId, testimonyUpload, controller.updateTestimony);
 
 /**
  * @swagger

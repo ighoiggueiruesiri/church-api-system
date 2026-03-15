@@ -1,53 +1,63 @@
 /**
- * fileHelper.js — Generic utility for purging uploaded files from disk
- *
- * Place at: src/utils/fileHelper.js
- *
- * Works on any environment (local, cPanel, AWS local storage, etc.)
- * as long as files are stored in public/uploads/ relative to the project root.
+ * fileHelper.js — Now works for BOTH old local files AND new Cloudinary URLs
  */
 
 const fs = require('fs');
 const path = require('path');
 const { logger } = require('../config/logger');
+const cloudinary = require('../config/cloudinary'); // ← NEW
 
-const UPLOAD_DIR = path.join(__dirname, '../../public/uploads');
+const UPLOAD_DIR = path.join(__dirname, '../../public/uploads'); // keep for old data
 
-/**
- * Deletes a stored upload file from disk given its relative path.
- *
- * @param {string|null|undefined} storedPath  e.g. "/uploads/abc.webp"
- *
- * Silent no-op if:
- *   - storedPath is empty / null
- *   - path is an external URL (http/https) — not our file to delete
- *   - file does not exist on disk (already purged or never saved)
- */
 const deleteUploadedFile = (storedPath) => {
   if (!storedPath) return;
 
-  // External URL — not our file
-  if (/^https?:\/\//i.test(storedPath)) return;
+  // ─── NEW: Cloudinary URL detected ─────────────────────────────────────
+  if (/^https?:\/\/res\.cloudinary\.com/i.test(storedPath)) {
+    const publicId = getPublicIdFromCloudinaryUrl(storedPath);
+    if (publicId) {
+      cloudinary.uploader.destroy(publicId, (error, result) => {
+        if (error) {
+          logger.error('Failed to delete from Cloudinary', { publicId, error: error.message });
+        } else {
+          logger.debug('Deleted image from Cloudinary', { publicId, result });
+        }
+      });
+    }
+    return; // fire-and-forget (safe for delete operations)
+  }
 
-  // Extract just the filename from "/uploads/abc.webp"
+  // ─── OLD: local disk (kept for backward compatibility) ─────────────────
+  if (!/^\/uploads\//.test(storedPath)) return;
+
   const filename = path.basename(storedPath);
   const fullPath = path.join(UPLOAD_DIR, filename);
 
-  // Resolve and confirm it stays inside the upload directory (path traversal guard)
   if (!fullPath.startsWith(UPLOAD_DIR)) {
     logger.warn('Blocked suspicious file deletion path', { storedPath });
     return;
   }
 
-  if (!fs.existsSync(fullPath)) return; // already gone — fine
+  if (!fs.existsSync(fullPath)) return;
 
   try {
     fs.unlinkSync(fullPath);
-    logger.debug('Purged upload file', { filename });
+    logger.debug('Purged local upload file', { filename });
   } catch (err) {
-    // Non-fatal — log and continue. A missing file should never break a DB update.
-    logger.error('Failed to purge upload file', { filename, error: err.message });
+    logger.error('Failed to purge local upload file', { filename, error: err.message });
   }
+};
+
+const getPublicIdFromCloudinaryUrl = (url) => {
+  if (!url) return null;
+  const parts = url.split('/');
+  const uploadIndex = parts.indexOf('upload');
+  if (uploadIndex === -1) return null;
+
+  let publicId = parts.slice(uploadIndex + 1).join('/');
+  publicId = publicId.replace(/^v\d+\//, '');   // remove version
+  publicId = publicId.replace(/\.\w+$/, '');    // remove .webp
+  return publicId;
 };
 
 module.exports = { deleteUploadedFile };

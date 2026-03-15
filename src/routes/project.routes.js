@@ -3,7 +3,7 @@ const router = express.Router();
 const controller = require('../controllers/project.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const { createUploadMiddleware } = require('../middleware/upload');
-const compressImage = require('../middleware/compressImage');
+//const compressImage = require('../middleware/compressImage');
 
 const projectUpload = createUploadMiddleware([{ name: 'image', maxCount: 1 }]);
 
@@ -114,7 +114,7 @@ router.get('/:id', validateObjectId, controller.getProjectById);
  *       500:
  *         description: Server Error
  */
-router.post('/', projectUpload, compressImage, controller.createProject);
+router.post('/', projectUpload, controller.createProject);
 
 /**
  * @swagger
@@ -151,7 +151,7 @@ router.post('/', projectUpload, compressImage, controller.createProject);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, projectUpload, compressImage, controller.updateProject);
+router.put('/:id', validateObjectId, projectUpload, controller.updateProject);
 
 /**
  * @swagger
