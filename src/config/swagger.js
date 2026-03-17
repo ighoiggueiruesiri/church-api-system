@@ -273,6 +273,30 @@ const options = {
           }
         },
 
+        // ── Stats (dashboard summary) ─────────────────────────────────────────
+        StatEntry: {
+          type: 'object',
+          description: 'Count summary for a single content type',
+          properties: {
+            total: { type: 'integer', description: 'All-time count (non-deleted records)', example: 42 },
+            week:  { type: 'integer', description: 'Records created in the last 7 days',  example: 3  },
+          }
+        },
+ 
+        Stats: {
+          type: 'object',
+          description: 'Cached dashboard summary — all content-type counts in one response',
+          properties: {
+            ministries:  { $ref: '#/components/schemas/StatEntry' },
+            sermons:     { $ref: '#/components/schemas/StatEntry' },
+            blogs:       { $ref: '#/components/schemas/StatEntry' },
+            prayers:     { $ref: '#/components/schemas/StatEntry' },
+            events:      { $ref: '#/components/schemas/StatEntry' },
+            testimonies: { $ref: '#/components/schemas/StatEntry' },
+            projects:    { $ref: '#/components/schemas/StatEntry' },
+          }
+        },
+
       }
     }
   },

@@ -17,6 +17,8 @@ const testimonyRoutes = require('./src/routes/testimony.routes');
 const blogRoutes = require('./src/routes/blog.routes');
 const prayerRequestRoutes = require('./src/routes/prayerRequest.routes');
 const contactMessageRoutes = require('./src/routes/contactMessage.routes');
+const statsRoutes         = require('./src/routes/stats.routes'); 
+
 const errorHandler = require('./src/middleware/errorHandler');
 const swaggerDocs = require('./src/config/swagger');
 
@@ -83,18 +85,7 @@ app.use('/api/v1/testimonies', testimonyRoutes);
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/prayer-requests', prayerRequestRoutes);
 app.use('/api/v1/contact-messages', contactMessageRoutes);
-
-
-/*
-app.use(`${APP_URL}/api/v1/ministries`, ministryRoutes);
-app.use(`${APP_URL}/api/v1/sermons`, sermonRoutes);
-app.use(`${APP_URL}/api/v1/events`, eventRoutes);
-app.use(`${APP_URL}/api/v1/blogs`, blogRoutes);
-app.use(`${APP_URL}/api/v1/testimonies`, testimonyRoutes);
-app.use(`${APP_URL}/api/v1/projects`, projectRoutes);
-app.use(`${APP_URL}/api/v1/prayer-requests`, prayerRequestRoutes);
-app.use(`${APP_URL}/api/v1/contact-messages`, contactMessageRoutes);
-*/
+app.use('/api/v1/stats',           statsRoutes); 
 
 // Initialize Swagger Docs (mounts at /api-docs)
 swaggerDocs(app);
