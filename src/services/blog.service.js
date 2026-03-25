@@ -20,7 +20,7 @@ class BlogService {
 
       const skip = (page - 1) * limit;
       const [data, total] = await Promise.all([
-        Blog.find(query).skip(skip).limit(Math.min(limit, 100)).lean(),
+        Blog.find(query).sort({ createdAt: -1 }).skip(skip).limit(Math.min(limit, 100)).lean(),
         Blog.countDocuments(query)
       ]);
 

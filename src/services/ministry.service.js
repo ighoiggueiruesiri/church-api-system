@@ -27,6 +27,7 @@ class MinistryService {
       const skip = (page - 1) * limit;
       const [data, total] = await Promise.all([
         Ministry.find(query)
+          .sort({ createdAt: -1 })
           .skip(skip)
           .limit(Math.min(limit, 100))
           .lean(),
