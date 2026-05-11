@@ -4,6 +4,7 @@ const controller = require('../controllers/blog.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const { createUploadMiddleware } = require('../middleware/upload');
 //const compressImage = require('../middleware/compressImage');
+const { protect, authorize } = require('../middleware/user.middleware');
 
 const blogUpload = createUploadMiddleware([{ name: 'image', maxCount: 1 }]);
 
@@ -114,7 +115,7 @@ router.get('/:id', validateObjectId, controller.getBlogById);
  *       500:
  *         description: Server Error
  */
-router.post('/', blogUpload, controller.createBlog);
+router.post('/', protect, authorize('admin', 'editor'), blogUpload, controller.createBlog);
 
 /**
  * @swagger
@@ -152,7 +153,7 @@ router.post('/', blogUpload, controller.createBlog);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, blogUpload, controller.updateBlog);
+router.put('/:id', protect, authorize('admin', 'editor'), validateObjectId, blogUpload, controller.updateBlog);
 
 /**
  * @swagger
@@ -175,6 +176,6 @@ router.put('/:id', validateObjectId, blogUpload, controller.updateBlog);
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteBlog);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteBlog);
 
 module.exports = router;

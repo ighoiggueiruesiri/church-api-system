@@ -4,6 +4,7 @@ const controller = require('../controllers/project.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const { createUploadMiddleware } = require('../middleware/upload');
 //const compressImage = require('../middleware/compressImage');
+const { protect, authorize } = require('../middleware/user.middleware');
 
 const projectUpload = createUploadMiddleware([{ name: 'image', maxCount: 1 }]);
 
@@ -114,7 +115,7 @@ router.get('/:id', validateObjectId, controller.getProjectById);
  *       500:
  *         description: Server Error
  */
-router.post('/', projectUpload, controller.createProject);
+router.post('/', protect, authorize('admin', 'editor'), projectUpload, controller.createProject);
 
 /**
  * @swagger
@@ -151,7 +152,7 @@ router.post('/', projectUpload, controller.createProject);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, projectUpload, controller.updateProject);
+router.put('/:id', protect, authorize('admin', 'editor'), validateObjectId, projectUpload, controller.updateProject);
 
 /**
  * @swagger
@@ -174,6 +175,6 @@ router.put('/:id', validateObjectId, projectUpload, controller.updateProject);
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteProject);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteProject);
 
 module.exports = router;

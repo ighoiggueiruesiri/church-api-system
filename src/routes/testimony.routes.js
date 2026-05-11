@@ -4,6 +4,7 @@ const controller = require('../controllers/testimony.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const { createUploadMiddleware } = require('../middleware/upload');
 //const compressImage = require('../middleware/compressImage');
+const { protect, authorize } = require('../middleware/user.middleware');
 
 const testimonyUpload = createUploadMiddleware([{ name: 'avatar', maxCount: 1 }]);
 
@@ -114,7 +115,7 @@ router.get('/:id', validateObjectId, controller.getTestimonyById);
  *       500:
  *         description: Server Error
  */
-router.post('/', testimonyUpload, controller.createTestimony);
+router.post('/', protect, authorize('admin', 'editor'), testimonyUpload, controller.createTestimony);
 
 /**
  * @swagger
@@ -151,7 +152,7 @@ router.post('/', testimonyUpload, controller.createTestimony);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, testimonyUpload, controller.updateTestimony);
+router.put('/:id', protect, authorize('admin', 'editor'), validateObjectId, testimonyUpload, controller.updateTestimony);
 
 /**
  * @swagger
@@ -174,6 +175,6 @@ router.put('/:id', validateObjectId, testimonyUpload, controller.updateTestimony
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteTestimony);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteTestimony);
 
 module.exports = router;

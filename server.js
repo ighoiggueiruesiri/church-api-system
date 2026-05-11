@@ -17,12 +17,19 @@ const testimonyRoutes = require('./src/routes/testimony.routes');
 const blogRoutes = require('./src/routes/blog.routes');
 const prayerRequestRoutes = require('./src/routes/prayerRequest.routes');
 const contactMessageRoutes = require('./src/routes/contactMessage.routes');
-const statsRoutes         = require('./src/routes/stats.routes'); 
+const statsRoutes = require('./src/routes/stats.routes'); 
+const userRoutes = require('./src/routes/user.routes');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const swaggerDocs = require('./src/config/swagger');
 
 const app = express();
+
+const rawOrigins = process.env.ALLOWED_ORIGINS?.trim();
+app.use(cors({ 
+  origin: !rawOrigins || rawOrigins === '*' ? '*' : rawOrigins.split(',').map(o => o.trim()),
+  credentials: true 
+}));
 
 app.get('/', (req, res) => {
   res.json({ 
@@ -49,9 +56,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(helmet());
 app.use(morgan('combined', { stream: morganStream }));      // Production logging
 
-const rawOrigins = process.env.ALLOWED_ORIGINS?.trim();
-app.use(cors({ origin: !rawOrigins || rawOrigins === '*' ? '*' : rawOrigins.split(',').map(o => o.trim()) }));
-
 app.use(express.json({ limit: '10mb' }));
 //app.use(mongoSanitize());                       // Prevent NoSQL injection
 
@@ -77,6 +81,7 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // Routes
+app.use('/api/v1/auth', userRoutes);
 app.use('/api/v1/ministries', ministryRoutes);
 app.use('/api/v1/sermons', sermonRoutes);
 app.use('/api/v1/events', eventRoutes);
@@ -85,7 +90,7 @@ app.use('/api/v1/testimonies', testimonyRoutes);
 app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/prayer-requests', prayerRequestRoutes);
 app.use('/api/v1/contact-messages', contactMessageRoutes);
-app.use('/api/v1/stats',           statsRoutes); 
+app.use('/api/v1/stats', statsRoutes); 
 
 // Initialize Swagger Docs (mounts at /api-docs)
 swaggerDocs(app);

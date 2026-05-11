@@ -4,6 +4,7 @@ const controller = require('../controllers/ministry.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const {createUploadMiddleware} = require('../middleware/upload');
 //const compressImage = require('../middleware/compressImage');
+const { protect, authorize } = require('../middleware/user.middleware');
 
 const ministryUpload = createUploadMiddleware([
   { name: 'headImage', maxCount: 1 },
@@ -121,7 +122,7 @@ router.get('/:id', validateObjectId, controller.getMinistryById);
  *     responses:
  *       201: { description: Ministry created }
  */
-router.post('/', ministryUpload, controller.createMinistry);
+router.post('/', protect, authorize('admin', 'editor'), ministryUpload, controller.createMinistry);
 
 /**
  * @swagger
@@ -154,7 +155,7 @@ router.post('/', ministryUpload, controller.createMinistry);
  *     responses:
  *       200: { description: Ministry updated }
  */
-router.put('/:id', validateObjectId, ministryUpload, controller.updateMinistry);
+router.put('/:id', protect, authorize('admin', 'editor'), validateObjectId, ministryUpload, controller.updateMinistry);
 
 /**
  * @swagger
@@ -177,6 +178,6 @@ router.put('/:id', validateObjectId, ministryUpload, controller.updateMinistry);
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteMinistry);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteMinistry);
 
 module.exports = router;

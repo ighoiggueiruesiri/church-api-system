@@ -3,7 +3,8 @@ const router = express.Router();
 const controller = require('../controllers/sermon.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const {createUploadMiddleware} = require('../middleware/upload');
-//const compressImage = require('../middleware/compressImage');          
+//const compressImage = require('../middleware/compressImage'); 
+const { protect, authorize } = require('../middleware/user.middleware');         
 
 const sermonUpload = createUploadMiddleware([{ name: 'thumbnail', maxCount: 1 }]);
 
@@ -114,7 +115,7 @@ router.get('/:id', validateObjectId, controller.getSermonById);
  *       500:
  *         description: Server Error
  */
-router.post('/', sermonUpload, controller.createSermon);
+router.post('/', sermonUpload, protect, authorize('admin', 'editor'), controller.createSermon);
 
 /**
  * @swagger
@@ -152,7 +153,7 @@ router.post('/', sermonUpload, controller.createSermon);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, sermonUpload, controller.updateSermon);
+router.put('/:id', protect, authorize('admin', 'editor'), validateObjectId, sermonUpload, controller.updateSermon);
 
 /**
  * @swagger
@@ -175,6 +176,6 @@ router.put('/:id', validateObjectId, sermonUpload, controller.updateSermon);
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteSermon);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteSermon);
 
 module.exports = router;

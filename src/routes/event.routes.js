@@ -4,6 +4,7 @@ const controller = require('../controllers/event.controller');
 const validateObjectId = require('../middleware/validateObjectId');
 const {createUploadMiddleware} = require('../middleware/upload');
 //const compressImage = require('../middleware/compressImage');
+const { protect, authorize } = require('../middleware/user.middleware');
 
 const eventUpload = createUploadMiddleware([{ name: 'image', maxCount: 1 }]);
 
@@ -114,7 +115,7 @@ router.get('/:id', validateObjectId, controller.getEventById);
  *       500:
  *         description: Server Error
  */
-router.post('/', eventUpload, controller.createEvent);
+router.post('/', protect, authorize('admin', 'editor'), eventUpload, controller.createEvent);
 
 /**
  * @swagger
@@ -152,7 +153,7 @@ router.post('/', eventUpload, controller.createEvent);
  *       500:
  *         description: Server Error
  */
-router.put('/:id', validateObjectId, eventUpload, controller.updateEvent);
+router.put('/:id', protect, authorize('admin', 'editor'), validateObjectId, eventUpload, controller.updateEvent);
 
 /**
  * @swagger
@@ -175,6 +176,6 @@ router.put('/:id', validateObjectId, eventUpload, controller.updateEvent);
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteEvent);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteEvent);
 
 module.exports = router;

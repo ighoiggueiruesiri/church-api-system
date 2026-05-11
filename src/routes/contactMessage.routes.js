@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const controller = require('../controllers/contactMessage.controller');
 const validateObjectId = require('../middleware/validateObjectId');
+const { protect, authorize } = require('../middleware/user.middleware');
 
 /**
  * @swagger
@@ -132,6 +133,6 @@ router.post('/', controller.createContactMessage);
  *       500:
  *         description: Server Error
  */
-router.delete('/:id', validateObjectId, controller.deleteContactMessage);
+router.delete('/:id', protect, authorize('admin'), validateObjectId, controller.deleteContactMessage);
 
 module.exports = router;

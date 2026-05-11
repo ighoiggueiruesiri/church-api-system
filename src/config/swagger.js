@@ -21,7 +21,15 @@ const options = {
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ],
+    security: [{ bearerAuth: [] }],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        }
+      },
       schemas: {
 
         // ── Shared nested schema ──────────────────────────────────────────────
@@ -133,6 +141,33 @@ const options = {
             image:    { type: 'string', format: 'binary', description: 'Event image (JPEG/PNG/WebP, max 10MB) — auto-compressed to WebP' },
             date:     { type: 'string' },
             time:     { type: 'string' }
+          }
+        },
+
+        // ── Auth & Users ──────────────────────────────────────────────────────
+        User: {
+          type: 'object',
+          properties: {
+            _id:       { type: 'string', description: 'Auto-generated MongoDB ID' },
+            name:      { type: 'string', description: 'User full name' },
+            email:     { type: 'string', format: 'email' },
+            role:      { type: 'string', enum: ['user', 'editor', 'admin'] },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' }
+          }
+        },
+
+        AuthResponse: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean', example: true },
+            data: {
+              type: 'object',
+              properties: {
+                user:  { $ref: '#/components/schemas/User' },
+                token: { type: 'string', description: 'JWT Bearer token' }
+              }
+            }
           }
         },
 
@@ -307,7 +342,7 @@ const swaggerSpec = swaggerJsdoc(options);
 
 const swaggerDocs = (app) => {
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-  console.log('📄 Swagger Docs available at http://localhost:5000/api-docs');
+  console.log(`📄 Swagger Docs available at ${appUrl}/api-docs`);
 };
 
 module.exports = swaggerDocs;
