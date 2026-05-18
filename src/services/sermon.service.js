@@ -1,12 +1,17 @@
 const Sermon = require('../models/sermon');
 const { logger } = require('../config/logger');
+const cache = require('../utils/cache');
 
 class SermonService {
 
   //Get all sermons
   async getAll(page = 1, limit = 10, searchTerm = '') {
     const start = Date.now();
+    const cacheKey = `sermons:list:page:${page}:limit:${limit}:search:${searchTerm.trim() || 'none'}`;
+
     try {
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
 
       //log
       logger.info('Fetching sermons', { page, limit, searchTerm: searchTerm || '(none)' });
@@ -40,15 +45,11 @@ class SermonService {
         totalRecords: total 
       });
 
-      return {
-        data,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
+      const result = { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+      
+      await cache.set(cacheKey, result, 300);
+      return result;
+
     } catch (err) {
 
       //log
@@ -62,7 +63,12 @@ class SermonService {
 
   //get a sermon
   async getById(id) {
+    const cacheKey = `sermons:id:${id}`;
+
     try {
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
       //log
       logger.debug('Starting get sermon by id query', { _id: id });
 
@@ -70,6 +76,7 @@ class SermonService {
 
       logger.debug('Get sermon by id query successfully', { _id: id });
 
+      if (sermon) await cache.set(cacheKey, sermon, 600);
       return sermon;
 
     } catch (err) {
@@ -90,6 +97,7 @@ class SermonService {
 
       logger.debug('Sermon Document inserted successfully', { _id: sermon._id });
 
+      await cache.delByPattern('sermons:list:*');
       return sermon;
 
     } catch (err) {
@@ -112,6 +120,9 @@ class SermonService {
       ).lean();
 
       logger.debug('Sermon document updating successfully', { _id: id });
+
+      await cache.del(`sermons:id:${id}`); 
+      await cache.delByPattern('sermons:list:*');
 
       return sermon;
 
@@ -138,6 +149,9 @@ class SermonService {
 
       logger.debug('Sermon document soft delete successfully', { _id: id });
 
+      await cache.del(`sermons:id:${id}`); // Invalidate
+      await cache.delByPattern('sermons:list:*');
+      
       return sermon;
 
     } catch (err) {

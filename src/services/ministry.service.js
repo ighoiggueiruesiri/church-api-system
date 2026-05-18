@@ -1,13 +1,21 @@
 const Ministry = require('../models/ministry');
 const { logger } = require('../config/logger');
 const { deleteUploadedFile } = require('../utils/fileHelper');
+const cache = require('../utils/cache');
 
 class MinistryService {
 
   //Get all ministries
   async getAll(page = 1, limit = 10, searchTerm = '') {
     const start = Date.now();
+    // 1. Generate unique cache key based on query params
+    const cacheKey = `ministries:list:page:${page}:limit:${limit}:search:${searchTerm.trim() || 'none'}`;
+
     try {
+
+      // 2. Check Cache
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
 
       //log
       logger.info('Fetching ministries', { page, limit, searchTerm: searchTerm || '(none)' });
@@ -43,15 +51,12 @@ class MinistryService {
         totalRecords: total 
       });
 
-      return {
-        data,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
+      const result = { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+      
+      // 3. Save to Cache for 5 minutes (300s)
+      await cache.set(cacheKey, result, 300);
+      return result;
+
     } catch (err) {
 
       //log
@@ -65,7 +70,15 @@ class MinistryService {
 
   //get a minitry
   async getById(id) {
+
+    const cacheKey = `ministries:id:${id}`;
+
     try {
+
+      // Check Cache
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
       //log
       logger.debug('Starting get ministry by id query', { _id: id });
 
@@ -73,6 +86,8 @@ class MinistryService {
 
       logger.debug('Get ministry by id query successfully', { _id: id });
 
+      // Save to cache
+      if (ministry) await cache.set(cacheKey, ministry, 600);
       return ministry;
 
     } catch (err) {
@@ -92,6 +107,9 @@ class MinistryService {
       const ministry = await Ministry.create(data);
 
       logger.debug('Ministry document inserted successfully', { _id: ministry._id });
+
+      // Invalidate list caches because a new item was added
+      await cache.delByPattern('ministries:list:*');
 
       return ministry;
 
@@ -123,6 +141,10 @@ class MinistryService {
       ).lean();
 
       logger.debug('ministry document updating successfully', { _id: id });
+
+      // Invalidate specific item and all lists
+      await cache.del(`ministries:id:${id}`);
+      await cache.delByPattern('ministries:list:*');
 
       return ministry;
 
@@ -156,6 +178,10 @@ class MinistryService {
 
       logger.debug('ministry document soft delete successfully', { _id: id });
 
+      // Invalidate specific item and all lists
+      await cache.del(`ministries:id:${id}`);
+      await cache.delByPattern('ministries:list:*');
+      
       return ministry;
 
     } catch (err) {

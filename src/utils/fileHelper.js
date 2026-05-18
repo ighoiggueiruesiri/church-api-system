@@ -1,6 +1,4 @@
-/**
- * fileHelper.js — Now works for BOTH old local files AND new Cloudinary URLs
- */
+/*
 
 const fs = require('fs');
 const path = require('path');
@@ -58,6 +56,49 @@ const getPublicIdFromCloudinaryUrl = (url) => {
   publicId = publicId.replace(/^v\d+\//, '');   // remove version
   publicId = publicId.replace(/\.\w+$/, '');    // remove .webp
   return publicId;
+};
+
+module.exports = { deleteUploadedFile };
+*/
+
+const fs = require('fs');
+const path = require('path');
+const { logger } = require('../config/logger');
+const { UTApi } = require('uploadthing/server');
+
+const utapi = new UTApi();
+const UPLOAD_DIR = path.join(__dirname, '../../public/uploads'); // Legacy backward fallback
+
+const deleteUploadedFile = async (storedPath) => {
+  if (!storedPath) return;
+
+  // ─── NEW: Uploadthing Storage Drops ─────────────────────────────────
+  if (storedPath.includes('utfs.io') || storedPath.includes('ufs.sh')) {
+    const fileKey = storedPath.split('/f/')[1];
+    if (fileKey) {
+      try {
+        await utapi.deleteFiles(fileKey);
+        logger.debug('Asset cleared successfully from Uploadthing cloud', { fileKey });
+      } catch (error) {
+        logger.error('Failed to clear asset from Uploadthing bucket', { fileKey, error: error.message });
+      }
+    }
+    return;
+  }
+
+  // ─── OLD: Local drive fallback (Backward compatibility) ─────────────
+  if (!/^\/uploads\//.test(storedPath)) return;
+  const filename = path.basename(storedPath);
+  const fullPath = path.join(UPLOAD_DIR, filename);
+
+  if (fullPath.startsWith(UPLOAD_DIR) && fs.existsSync(fullPath)) {
+    try {
+      fs.unlinkSync(fullPath);
+      logger.debug('Purged legacy local directory asset', { filename });
+    } catch (err) {
+      logger.error('Failed to delete asset locally', { filename, error: err.message });
+    }
+  }
 };
 
 module.exports = { deleteUploadedFile };

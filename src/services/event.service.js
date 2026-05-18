@@ -1,12 +1,18 @@
 const Event = require('../models/event');
 const { logger } = require('../config/logger');
+const cache = require('../utils/cache');
 
 class EventService {
 
   //Get all ministries
   async getAll(page = 1, limit = 10, searchTerm = '') {
     const start = Date.now();
+    const cacheKey = `events:list:page:${page}:limit:${limit}:search:${searchTerm.trim() || 'none'}`;
+
     try {
+
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
 
       //log
       logger.info('Fetching ministries', { page, limit, searchTerm: searchTerm || '(none)' });
@@ -42,15 +48,11 @@ class EventService {
         totalRecords: total 
       });
 
-      return {
-        data,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
+      const result = { data, pagination: { page, limit, total, pages: Math.ceil(total / limit) } };
+      
+      await cache.set(cacheKey, result, 300);
+      return result;
+
     } catch (err) {
 
       //log
@@ -64,7 +66,14 @@ class EventService {
 
   //get a minitry
   async getById(id) {
+
+    const cacheKey = `events:id:${id}`;
+
     try {
+
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
       //log
       logger.debug('Starting get event by id query', { _id: id });
 
@@ -72,6 +81,7 @@ class EventService {
 
       logger.debug('Get event by id query successfully', { _id: id });
 
+      if (event) await cache.set(cacheKey, event, 600);
       return event;
 
     } catch (err) {
@@ -92,6 +102,7 @@ class EventService {
 
       logger.debug('Event document inserted successfully', { _id: event._id });
 
+      await cache.delByPattern('events:list:*');
       return event;
 
     } catch (err) {
@@ -114,6 +125,9 @@ class EventService {
       ).lean();
 
       logger.debug('event document updating successfully', { _id: id });
+
+      await cache.del(`events:id:${id}`); 
+      await cache.delByPattern('events:list:*');
 
       return event;
 
@@ -140,6 +154,9 @@ class EventService {
 
       logger.debug('event document soft delete successfully', { _id: id });
 
+      await cache.del(`events:id:${id}`); // Invalidate
+      await cache.delByPattern('events:list:*');
+      
       return event;
 
     } catch (err) {
