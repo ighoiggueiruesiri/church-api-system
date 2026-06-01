@@ -9,6 +9,7 @@ const actionSchema = new mongoose.Schema({
 
 const ministrySchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 500, unique: true },
+  slug: { type: String, required: true, trim: true, unique: true, lowercase: true, index: true },
   desc: { type: String, required: true, trim: true, maxlength: 500 },
   headName: { type: String, trim: true, maxlength: 500 },
   headImage: { type: String, trim: true },
@@ -28,6 +29,7 @@ const ministrySchema = new mongoose.Schema({
 
 // Indexes for performance
 ministrySchema.index({ deletedAt: 1 });
+ministrySchema.index({ slug: 1 });
 
 // Soft delete helper
 ministrySchema.statics.findActive = function() {

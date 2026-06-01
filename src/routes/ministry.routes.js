@@ -95,6 +95,33 @@ router.get('/:id', validateObjectId, controller.getMinistryById);
 
 /**
  * @swagger
+ * /api/v1/ministries/slug/{slug}:
+ *   get:
+ *     summary: Get a ministry by slug
+ *     tags: [Ministries]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The unique slug of the ministry (e.g., "ministry-of-education")
+ *     responses:
+ *       200:
+ *         description: Ministry successfully retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Ministry'
+ *       404:
+ *         description: Ministry not found
+ *       500:
+ *         description: Server Error
+ */
+router.get('/slug/:slug', controller.getMinistryBySlug);
+
+/**
+ * @swagger
  * /api/v1/ministries:
  *   post:
  *     summary: Create a new ministry

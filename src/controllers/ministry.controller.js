@@ -78,6 +78,26 @@ exports.getMinistryById = async (req, res, next) => {
   }
 };
 
+// Get a specific ministry by slug
+exports.getMinistryBySlug = async (req, res, next) => {
+  try {
+    logger.info('Fetching single ministry by slug', { slug: req.params.slug });
+
+    const ministry = await MinistryService.getBySlug(req.params.slug);
+
+    if (!ministry) {
+      logger.warn('Ministry not found by slug', { slug: req.params.slug });
+      return error(res, "Ministry not found", 404);
+    }
+
+    logger.info('Ministry retrieved successfully by slug', { slug: req.params.slug, title: ministry.title });
+    success(res, resolveImageUrls(ministry));
+  } catch (err) {
+    logger.error('Error fetching ministry by slug', { slug: req.params.slug, error: err.message });
+    next(err);
+  }
+};
+
 //create a ministry
 exports.createMinistry = async (req, res, next) => {
   try {

@@ -3,6 +3,17 @@ const { logger } = require('../config/logger');
 const { deleteUploadedFile } = require('../utils/fileHelper');
 const cache = require('../utils/cache');
 
+// Zero-dependency helper function to safely generate clean URL slugs
+const generateSlug = (title) => {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-')         // Replace spaces with hyphens
+    .replace(/-+/g, '-')          // Avoid consecutive hyphens
+    .replace(/^-+|-+$/g, '');     // Trim trailing/leading hyphens
+};
+
 class MinistryService {
 
   //Get all ministries
@@ -98,12 +109,34 @@ class MinistryService {
     }
   }
 
+  //fetch by Slug
+  async getBySlug(slug) {
+    const cacheKey = `ministries:slug:${slug}`;
+    try {
+      const cached = await cache.get(cacheKey);
+      if (cached) return cached;
+
+      logger.debug('Starting get ministry by slug query', { slug });
+      const ministry = await Ministry.findOne({ slug, deletedAt: null }).lean();
+      
+      if (ministry) {
+        await cache.set(cacheKey, ministry, 600); // Cache for 10 minutes
+      }
+      return ministry;
+    } catch (err) {
+      logger.error('Database error in get ministry by slug', { slug, error: err.message });
+      throw err;
+    }
+  }
+
   //create a ministry
   async create(data) {
     try {
       //log
       logger.debug('Inserting new ministry document', { title: data.title });
       
+      data.slug = generateSlug(data.title);
+
       const ministry = await Ministry.create(data);
 
       logger.debug('Ministry document inserted successfully', { _id: ministry._id });
@@ -129,6 +162,10 @@ class MinistryService {
       // Fetch the existing document first so we can purge the old image if
       // the caller is replacing headImage with a new upload.
       const existing = await Ministry.findOne({ _id: id, deletedAt: null }).lean();
+
+      if (data.title) {
+        data.slug = generateSlug(data.title);
+      }
 
       if (existing && data.headImage && existing.headImage !== data.headImage) {
         deleteUploadedFile(existing.headImage);
@@ -179,6 +216,9 @@ class MinistryService {
       logger.debug('ministry document soft delete successfully', { _id: id });
 
       // Invalidate specific item and all lists
+      if (existing?.slug) {
+        await cache.del(`ministries:slug:${existing.slug}`);
+      }
       await cache.del(`ministries:id:${id}`);
       await cache.delByPattern('ministries:list:*');
       

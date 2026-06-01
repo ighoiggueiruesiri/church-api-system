@@ -41,6 +41,7 @@ const actionsField = z
 
 const baseMinistryDTO = z.object({
   title: z.string().min(1).max(500),
+  slug: z.string().optional(),
   desc: z.string().min(1).max(500),
   headName: z.string().max(500).optional(),
   headImage: z.string().optional(),
