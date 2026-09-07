@@ -19,6 +19,7 @@ const prayerRequestRoutes = require('./src/routes/prayerRequest.routes');
 const contactMessageRoutes = require('./src/routes/contactMessage.routes');
 const statsRoutes = require('./src/routes/stats.routes'); 
 const userRoutes = require('./src/routes/user.routes');
+const restroomFeedbackRoutes = require('./src/routes/restroomFeedback.routes');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const swaggerDocs = require('./src/config/swagger');
@@ -61,6 +62,7 @@ app.use(express.json({ limit: '10mb' }));
 
 // Rate limiting (100 requests per 15 min per IP)
 // DISABLED during tests so concurrent tests pass
+/*
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -72,6 +74,7 @@ const limiter = rateLimit({
 if (process.env.NODE_ENV !== 'test') {
   app.use('/api/', limiter);
 }
+*/
 
 // Database
 if (process.env.NODE_ENV !== 'test') {
@@ -91,6 +94,7 @@ app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/prayer-requests', prayerRequestRoutes);
 app.use('/api/v1/contact-messages', contactMessageRoutes);
 app.use('/api/v1/stats', statsRoutes); 
+app.use('/api/v1/restroom-feedback', restroomFeedbackRoutes);
 
 // Initialize Swagger Docs (mounts at /api-docs)
 swaggerDocs(app);
